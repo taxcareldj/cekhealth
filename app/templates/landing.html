@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Cek Pajak Klinik Anda dalam 5 Menit | TaxCare{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<section class="hero">
+  <span class="hero-eyebrow">Tax Health Check – Doctor Edition</span>
+  <h1>Cek Pajak Klinik Anda<br>dalam <em>5 Menit</em></h1>
+  <p class="hero-sub">
+    NPPN 50% atau Pembukuan Riil? Ketahui mana yang lebih hemat
+    sebelum deadline 31 Maret tanpa perlu jadi ahli pajak.
+  </p>
+  <a href="/simulator" class="btn btn-success btn-lg">
+    Mulai Tax Health Check Gratis →
+  </a>
+  <div class="trust-badges">
+    <span class="trust-badge">✓ Didukung aturan DJP</span>
+    <span class="trust-badge">✓ PER-17/PJ/2015 & PMK terkini</span>
+    <span class="trust-badge">✓ 100% gratis & rahasia</span>
+    <span class="trust-badge">✓ Laporan PDF instan</span>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="feat-card">
+    <div class="feat-icon">📊</div>
+    <h3>Estimasi Penghematan Pajak</h3>
+    <p>Bandingkan NPPN 50% vs Pembukuan Riil secara instan. Lihat selisih PPh terutang dalam rupiah nyata.</p>
+  </div>
+  <div class="feat-card">
+    <div class="feat-icon">📋</div>
+    <h3>Template CoA Dokter</h3>
+    <p>Chart of Accounts khusus praktik dokter. Preset biaya berdasarkan data agregat klinik Indonesia.</p>
+  </div>
+  <div class="feat-card">
+    <div class="feat-icon">📄</div>
+    <h3>Laporan PDF Instan</h3>
+    <p>Unduh laporan profesional lengkap dengan tabel perbandingan, grafik, dan rekomendasi TaxCare.</p>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section style="background:#fff; padding:48px 24px; border-top:1px solid var(--gray-200);">
+  <div style="max-width:720px; margin:0 auto; text-align:center;">
+    <h2 style="font-size:24px; font-weight:800; color:var(--blue-dark); margin-bottom:8px;">Cara Kerja</h2>
+    <p style="color:var(--gray-600); margin-bottom:36px;">Selesai dalam 3 langkah, kurang dari 5 menit</p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:24px; text-align:left;">
+      <div style="display:flex; gap:14px; align-items:flex-start;">
+        <div style="min-width:36px; height:36px; background:var(--blue); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:16px;">1</div>
+        <div><strong style="color:var(--blue-dark);">Isi Profil Praktik</strong><p style="font-size:13px; color:var(--gray-600); margin-top:4px;">Jenis praktik dan omzet bruto tahunan</p></div>
+      </div>
+      <div style="display:flex; gap:14px; align-items:flex-start;">
+        <div style="min-width:36px; height:36px; background:var(--blue); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:16px;">2</div>
+        <div><strong style="color:var(--blue-dark);">Estimasi Biaya Klinik</strong><p style="font-size:13px; color:var(--gray-600); margin-top:4px;">Gunakan preset atau isi detail CoA dokter</p></div>
+      </div>
+      <div style="display:flex; gap:14px; align-items:flex-start;">
+        <div style="min-width:36px; height:36px; background:var(--green); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:16px;">3</div>
+        <div><strong style="color:var(--blue-dark);">Dapatkan Hasil & PDF</strong><p style="font-size:13px; color:var(--gray-600); margin-top:4px;">Rekomendasi instan + laporan PDF untuk diunduh</p></div>
+      </div>
+    </div>
+    <div style="margin-top:36px;">
+      <a href="/simulator" class="btn btn-primary btn-lg">Mulai Sekarang – Gratis →</a>
+    </div>
+  </div>
+</section>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer">
+  Hasil simulasi hanya estimasi. Konsultasikan dengan konsultan pajak bersertifikat untuk keputusan resmi.
+</div>
+{% endblock %}

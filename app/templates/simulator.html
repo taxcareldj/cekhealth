@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Simulator Pajak Dokter | TaxCare{% endblock %}
+
+{% block content %}
+<div class="sim-wrapper">
+  <div class="sim-header">
+    <h2>Tax Health Check</h2>
+    <p>Isi data klinik Anda untuk mengetahui metode pajak optimal</p>
+  </div>
+
+  <!-- Deadline banner -->
+  <div style="background:#FFF8E1;border:1.5px solid #FFC107;border-radius:var(--radius);padding:12px 18px;margin-bottom:24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="background:#F59E0B;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.04em;white-space:nowrap;">⚠ DEADLINE</span>
+    <span style="font-size:13px;color:#92400E;font-weight:500;">Pemberitahuan penggunaan NPPN ke KPP paling lambat <strong>31 Maret 2026</strong>.</span>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar">
+    <div class="progress-step done"><div class="step-num">✓</div><span>Profil</span></div>
+    <div class="step-connector done"></div>
+    <div class="progress-step active"><div class="step-num">2</div><span>Biaya Riil</span></div>
+    <div class="step-connector"></div>
+    <div class="progress-step"><div class="step-num">3</div><span>Data Pajak</span></div>
+  </div>
+
+  {% if errors %}
+  <div class="alert alert-danger" style="margin-bottom:16px;">
+    {% for e in errors %}<div>⚠ {{ e }}</div>{% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/simulator/hasil" id="sim-form" autocomplete="off">
+
+    <!-- STEP 1 -->
+    <div class="sim-card">
+      <div class="sim-section-title">Langkah 1 — Profil Praktik</div>
+
+      <div class="form-group">
+        <label>Nama Dokter <span class="hint">(opsional, untuk laporan PDF)</span></label>
+        <div class="input-rp" style="background:#fff;">
+          <span class="input-rp-prefix">dr.</span>
+          <input type="text" name="nama_dokter" placeholder="Nama lengkap"
+                 value="{{ prev.nama_dokter if prev else '' }}" style="background:#fff;">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Jenis Praktik</label>
+        <div class="radio-group">
+          {% set jp = prev.jenis_praktik if prev else 'Mandiri' %}
+          <label class="radio-opt {{ 'selected' if jp == 'Mandiri' else '' }}">
+            <input type="radio" name="jenis_praktik" value="Mandiri" {{ 'checked' if jp == 'Mandiri' else '' }}> Mandiri
+          </label>
+          <label class="radio-opt {{ 'selected' if jp == 'RS Only' else '' }}">
+            <input type="radio" name="jenis_praktik" value="RS Only" {{ 'checked' if jp == 'RS Only' else '' }}> RS Only
+          </label>
+          <label class="radio-opt {{ 'selected' if jp == 'Hybrid' else '' }}">
+            <input type="radio" name="jenis_praktik" value="Hybrid" {{ 'checked' if jp == 'Hybrid' else '' }}> Hybrid (RS + Klinik)
+          </label>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label>Omzet Bruto Tahunan</label>
+          <div class="input-rp">
+            <span class="input-rp-prefix">Rp</span>
+            <!-- name="omzet" langsung di sini, tidak perlu hidden field -->
+            <input type="text" name="omzet" id="omzet-input"
+                   placeholder="2.000.000.000"
+                   value="{{ prev.omzet if prev else '' }}"
+                   inputmode="numeric" autocomplete="off"
+                   oninput="onOmzetChange()" onblur="fmtOmzet()">
+          </div>
+          <div id="omzet-err" class="error-msg">{{ errors[0] if errors else '' }}</div>
+        </div>
+        <div class="form-group">
+          <label>Tahun Pajak</label>
+          <select name="tahun">
+            <option value="2026" selected>2026</option>
+            <option value="2025">2025</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="sim-card">
+      <div class="sim-section-title">Langkah 2 — Estimasi Biaya Riil Klinik</div>
+      <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px;">
+        Pilih preset cepat, atau isi rincian CoA di bawah ini secara manual.
+      </p>
+
+      <div class="preset-row">
+        <button type="button" class="preset-btn" data-preset="rendah" onclick="applyPreset('rendah',this)">
+          Biaya Rendah<br><span style="font-size:10px;font-weight:400;opacity:.8">~40% omzet</span>
+        </button>
+        <button type="button" class="preset-btn active" data-preset="sedang" onclick="applyPreset('sedang',this)">
+          Biaya Sedang<br><span style="font-size:10px;font-weight:400;opacity:.8">~55% omzet</span>
+        </button>
+        <button type="button" class="preset-btn" data-preset="tinggi" onclick="applyPreset('tinggi',this)">
+          Biaya Tinggi<br><span style="font-size:10px;font-weight:400;opacity:.8">~70% omzet</span>
+        </button>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-head" onclick="toggleAcc(this)">
+          📋 Rincian Chart of Accounts Dokter
+          <span class="toggle">sembunyikan ▲</span>
+        </div>
+        <div class="accordion-body open">
+          {% set fields = [
+            ('gaji_staf',     'Gaji & Tunjangan Staf/Perawat'),
+            ('obat_bhp',      'Obat & Bahan Habis Pakai'),
+            ('sewa_utilitas', 'Sewa Klinik/Ruang + Utilitas'),
+            ('depresiasi',    'Depresiasi Alat Medis & Inventaris'),
+            ('maintenance',   'Maintenance, Asuransi Malpraktik, Iuran IDI/CME'),
+            ('lain_lain',     'Biaya Lain-lain'),
+          ] %}
+          {% for fname, flabel in fields %}
+          <div class="coa-row">
+            <span class="coa-label">{{ flabel }}</span>
+            <div class="coa-input-wrap">
+              <span class="coa-prefix">Rp</span>
+              <input type="text" class="coa-input" name="{{ fname }}" id="coa-{{ fname }}"
+                     value="{{ prev[fname] if prev and prev[fname] else '0' }}"
+                     inputmode="numeric"
+                     oninput="updateTotal()" onblur="fmtCoa(this)" onfocus="rawCoa(this)">
+            </div>
+          </div>
+          {% endfor %}
+          <div class="total-row">
+            <span>Total Biaya Riil</span>
+            <span>
+              <strong id="total-biaya">Rp 0</strong>
+              <span style="font-size:12px;color:var(--gray-600);margin-left:8px;" id="total-persen">0%</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="sim-card">
+      <div class="sim-section-title">
+        Langkah 3 — Data Pajak Pribadi
+        <span style="text-transform:none;font-size:11px;color:var(--gray-400);font-weight:400;">(opsional)</span>
+      </div>
+      <div class="form-group">
+        <label>Status PTKP</label>
+        <select name="ptkp_status">
+          <option value="TK/0">TK/0 – Tidak kawin, tanpa tanggungan (Rp 54.000.000)</option>
+          <option value="K/0">K/0 – Kawin, tanpa tanggungan (Rp 58.500.000)</option>
+          <option value="K/1" selected>K/1 – Kawin, 1 tanggungan (Rp 63.000.000)</option>
+          <option value="K/2">K/2 – Kawin, 2 tanggungan (Rp 67.500.000)</option>
+          <option value="K/3">K/3 – Kawin, 3 tanggungan (Rp 72.000.000)</option>
+        </select>
+      </div>
+      <p style="font-size:12px;color:var(--gray-400);">Jika tidak yakin, biarkan default K/1.</p>
+    </div>
+
+    <!-- Submit -->
+    <div style="text-align:center;padding:8px 0 16px;">
+      <button type="submit" class="btn btn-primary btn-lg" style="min-width:260px;">
+        Hitung &amp; Lihat Hasil →
+      </button>
+      <p style="font-size:12px;color:var(--gray-400);margin-top:10px;">Estimasi selesai dalam &lt;1 detik</p>
+    </div>
+
+  </form>
+</div>
+
+<div class="disclaimer">
+  Hasil simulasi hanya estimasi. Konsultasikan dengan konsultan pajak bersertifikat untuk keputusan resmi.
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── format helpers ──────────────────────────────────
+function fmtNum(n){return new Intl.NumberFormat('id-ID').format(Math.round(n))}
+function parseNum(s){
+  if(!s) return 0;
+  // Remove 'Rp', spaces, then handle dots as thousand sep
+  let c = String(s).replace(/Rp/g,'').replace(/\s/g,'');
+  if(c.includes(',')){c=c.replace(/\./g,'').replace(',','.')}
+  else{c=c.replace(/\./g,'')}
+  return parseFloat(c)||0;
+}
+
+// ── omzet ───────────────────────────────────────────
+function onOmzetChange(){
+  document.getElementById('omzet-err').textContent='';
+  updateTotal();
+}
+function fmtOmzet(){
+  const el=document.getElementById('omzet-input');
+  const v=parseNum(el.value);
+  if(v>0) el.value=fmtNum(v);
+}
+
+// ── coa inputs ──────────────────────────────────────
+function fmtCoa(el){const v=parseNum(el.value);el.value=v>0?fmtNum(v):'0'}
+function rawCoa(el){const v=parseNum(el.value);if(v>0) el.value=v}
+
+// ── accordion ───────────────────────────────────────
+function toggleAcc(head){
+  const body=head.nextElementSibling;
+  const lbl=head.querySelector('.toggle');
+  const open=body.classList.toggle('open');
+  lbl.textContent=open?'sembunyikan ▲':'tampilkan ▼';
+}
+
+// ── preset ──────────────────────────────────────────
+const PRESETS={
+  rendah:{gaji_staf:.132,obat_bhp:.116,sewa_utilitas:.072,depresiasi:.040,maintenance:.020,lain_lain:.020},
+  sedang:{gaji_staf:.182,obat_bhp:.160,sewa_utilitas:.099,depresiasi:.055,maintenance:.028,lain_lain:.028},
+  tinggi:{gaji_staf:.231,obat_bhp:.203,sewa_utilitas:.126,depresiasi:.070,maintenance:.035,lain_lain:.035},
+};
+function applyPreset(key,btn){
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const omzet=parseNum(document.getElementById('omzet-input').value);
+  if(!omzet){document.getElementById('omzet-err').textContent='Isi omzet dulu sebelum pakai preset';return}
+  Object.entries(PRESETS[key]).forEach(([k,pct])=>{
+    const el=document.getElementById('coa-'+k);
+    if(el) el.value=fmtNum(Math.round(omzet*pct));
+  });
+  document.querySelector('.accordion-body').classList.add('open');
+  document.querySelector('.toggle').textContent='sembunyikan ▲';
+  updateTotal();
+}
+
+// ── total biaya ─────────────────────────────────────
+function updateTotal(){
+  const omzet=parseNum(document.getElementById('omzet-input').value);
+  const keys=['gaji_staf','obat_bhp','sewa_utilitas','depresiasi','maintenance','lain_lain'];
+  const total=keys.reduce((s,k)=>{const el=document.getElementById('coa-'+k);return s+(el?parseNum(el.value):0)},0);
+  document.getElementById('total-biaya').textContent='Rp '+fmtNum(total);
+  document.getElementById('total-persen').textContent=omzet>0?((total/omzet)*100).toFixed(1)+'% dari omzet':'';
+}
+
+// ── init ────────────────────────────────────────────
+document.getElementById('sim-form').addEventListener('submit',function(){
+  // Before submit: strip formatting from omzet so server receives raw number
+  const el=document.getElementById('omzet-input');
+  el.value=parseNum(el.value)||'';
+  // Strip formatting from all CoA inputs too
+  ['gaji_staf','obat_bhp','sewa_utilitas','depresiasi','maintenance','lain_lain'].forEach(k=>{
+    const e=document.getElementById('coa-'+k);
+    if(e) e.value=parseNum(e.value)||0;
+  });
+});
+
+// radio group styling
+document.querySelectorAll('.radio-group').forEach(g=>{
+  g.querySelectorAll('.radio-opt').forEach(opt=>{
+    opt.addEventListener('click',()=>{
+      g.querySelectorAll('.radio-opt').forEach(o=>o.classList.remove('selected'));
+      opt.classList.add('selected');
+      opt.querySelector('input[type=radio]').checked=true;
+    });
+  });
+});
+
+updateTotal();
+</script>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Error {{ status }} | TaxCare{% endblock %}
+{% block content %}
+<div style="text-align:center; padding:80px 24px;">
+  <div style="font-size:48px; font-weight:800; color:var(--blue-dark); margin-bottom:8px;">{{ status }}</div>
+  <h2 style="font-size:22px; font-weight:700; margin-bottom:8px; color:var(--gray-900);">{{ title }}</h2>
+  {% if detail %}<p style="color:var(--gray-500); font-family:monospace; font-size:13px; margin-bottom:20px;">{{ detail }}</p>{% endif %}
+  <a href="/" class="btn btn-primary btn-lg">← Kembali ke Beranda</a>
+</div>
+{% endblock %}
